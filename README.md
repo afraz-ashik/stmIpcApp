@@ -1,4 +1,4 @@
-# stmDemoApp
+# stmIpcApp
 
 A STM32 project for NUCLEO-U575ZI-Q to toggle LEDs within the board and when user button is pressed using FreeRtos and IPC.
 Task 1 (Poller) sends request to Task 2 (Receiver) to change LED status then Task 2 changes the state and sends acknowledgment message to Task 1.
