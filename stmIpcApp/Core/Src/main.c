@@ -89,6 +89,8 @@ void MX_FREERTOS_Init(void);
 static void MX_GPIO_Init(void);
 static void MX_ICACHE_Init(void);
 static bool tasksUid(uint32 *pulId);
+static void hexdump(void *pAddr, uint32 ulSize);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -422,7 +424,7 @@ void MX_FREERTOS_Init(void) {
 	PvPollerHandle = osThreadNew(tasksPoller, NULL, &stPollerAttributes);
 
   /* creation of Receiver */
-  pvReceiverHandle = osThreadNew(tasksReceiver, NULL, &stReceiverAttributes);
+	pvReceiverHandle = osThreadNew(tasksReceiver, NULL, &stReceiverAttributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -464,8 +466,7 @@ void tasksPoller(void *argument)
 	printf("[POLLER]   BUTTON PRESS DETECTED\r\n");
 
 	// Increment UID
-	if (true != tasksUid
-  (&ulUID))
+	if (true != tasksUid(&ulUID))
 	{
 		printf("Failed to increment UID!\n");
 	}
@@ -498,6 +499,8 @@ void tasksPoller(void *argument)
 		printf("CMD:0x%02x |", stAck.ucCMD);
 		printf(" STATE:0x%02x | ", stAck.ucState);
 		printf("DATA:0x%02lu |\r\n", stAck.ulData);
+		printf("Ack hexdump->");
+		hexdump(&stAck, sizeof(stAck));
 	}
 	else
 	{
@@ -551,6 +554,8 @@ void tasksReceiver(void *argument)
 		printf("[RECEIVER] REQUEST RECIEVED FROM POLLER\r\n");
 		printf("[RECEIVER] | UID:%04lu | CMD:0x%02x | DATA:0x%02lu |\r\n",
 				stReq.ulUID, stReq.ucCMD, stReq.ulData);
+		printf("Req hexdump->");
+		hexdump(&stReq, sizeof(stReq));
 	}
 	else
 	{
@@ -558,7 +563,7 @@ void tasksReceiver(void *argument)
 	}
 
 	osMutexRelease(pvPollerMutex);
-	if
+
 	osMutexAcquire(pvReceiverMutex, osWaitForever);
 
 	stAck.ucCMD = ACK_CMD;
@@ -629,6 +634,55 @@ static bool tasksUid(uint32 *pulId)
     return blResult;
 }
 
+//*********************************.hexdump.***********************************
+// Purpose : To hexdump from the input starting pAddr to the given size.
+// Inputs  : pAddr - pointer to the address to be dumped.
+// Inputs  : ulSize - size to till which the hex is to be dumped.
+// Outputs : None.
+// Return  : Zero.
+// Notes   : None.
+//*****************************************************************************
+static void hexdump(void *pAddr, uint32 ulSize)
+{
+	uint32 ulIdx = 0;
+	uint16 unIdx = 0;
+	const char *pucAddr = (const char *) pAddr;
+
+	for (ulIdx = 0; ulIdx < ulSize; ulIdx+=NEXT_LINE)
+	{
+		for (unIdx = 0; unIdx < NEXT_LINE; unIdx++)
+		{
+            if (ulSize > (unIdx + ulIdx))
+            {
+                printf("%02x ", *(pucAddr + unIdx + ulIdx));
+            }
+            else
+            {
+                printf(" ");
+            }
+		}
+
+		printf("\t  |");
+
+		for (unIdx = 0; unIdx < NEXT_LINE; unIdx++)
+		{
+			if (ulSize > (unIdx + ulIdx))
+			{
+				if ((ASCII_START > *(pucAddr + unIdx + ulIdx)) ||
+					(ASCII_END < *(pucAddr + unIdx + ulIdx)))
+				{
+					printf(".");
+				}
+				else
+				{
+					printf("%c", *(pucAddr + unIdx + ulIdx));
+				}
+			}
+		}
+
+		printf("|\r\n");
+	}
+}
 /* USER CODE END Application */
 
 #ifdef  USE_FULL_ASSERT
